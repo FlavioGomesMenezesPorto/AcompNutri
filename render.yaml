@@ -1,26 +1,20 @@
-# Render Blueprint do AcompNutri — cria tudo de uma vez:
+# Render Blueprint do AcompNutri — cria a API e o site de uma vez:
 #   Render → New → Blueprint → escolha este repositório.
 #
-#   acompnutri-db   PostgreSQL (os dados do app)
 #   acompnutri-api  API (pasta server/)
 #   acompnutri      Site (Vite → arquivos estáticos)
 #
+# O banco fica no Neon (Postgres grátis que não expira): crie em https://neon.tech
+# e cole a connection string em DATABASE_URL.
+#
 # Os campos marcados "sync: false" o Render pede na criação (veja o README, seção Render).
-
-databases:
-  - name: acompnutri-db
-    plan: free            # ATENÇÃO: o Postgres grátis do Render expira 30 dias após criado
-    region: virginia      # mais perto do Brasil entre as opções do Render
-    databaseName: acompnutri
-    user: acompnutri
-    postgresMajorVersion: "16"
 
 services:
   - type: web
     name: acompnutri-api
     runtime: node
     plan: free            # dorme após 15 min sem uso; a primeira chamada leva ~1 min
-    region: virginia
+    region: virginia      # mais perto do Brasil entre as opções do Render (use o Neon em US East também)
     rootDir: server
     buildCommand: npm ci --omit=dev
     startCommand: node index.js
@@ -32,12 +26,12 @@ services:
         value: production
       - key: APP_TIMEZONE
         value: America/Sao_Paulo
-      - key: DATABASE_URL
-        fromDatabase:
-          name: acompnutri-db
-          property: connectionString   # endereço interno (mesma rede, sem SSL)
-      - key: DATABASE_SSL
-        value: "false"
+      - key: DATABASE_URL              # connection string do Neon (postgresql://...neon.tech/...)
+        sync: false
+      - key: DATABASE_SSL              # o Neon exige SSL
+        value: "true"
+      - key: DATABASE_POOL_MAX
+        value: "5"
       - key: SUPABASE_URL              # Project URL do Supabase novo
         sync: false
       - key: CORS_ORIGIN               # https://acompnutri.onrender.com,https://localhost

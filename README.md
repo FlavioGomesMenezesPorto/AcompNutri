@@ -91,14 +91,25 @@ npm run android:build
 > Ajustes desta máquina: Gradle 9.1 (JDK 25), `android.overridePathCheck=true` (pasta com acentos)
 > e `scripts/android-build.cjs` usa `C:\Users\Public\acompnutri-tmp` como pasta temporária do Java.
 
-## 4. Publicar no Render (tudo de uma vez)
+## 4. Publicar: banco no Neon + API e site no Render
 
-O arquivo [render.yaml](render.yaml) cria o banco, a API e o site.
+O banco fica no **Neon** (Postgres grátis que não expira). O arquivo [render.yaml](render.yaml)
+cria a API e o site no Render.
 
+**Banco (Neon)**
+1. https://neon.tech → entre com o GitHub/Google → **New project** → nome `acompnutri`,
+   Postgres 16 ou mais novo, região **AWS US East (N. Virginia)** (a mesma do Render).
+2. No painel do projeto → **Connect** → copie a **connection string**
+   (`postgresql://usuario:senha@ep-....neon.tech/neondb?sslmode=require`).
+   Guarde-a só no Render — não coloque no GitHub.
+3. Não precisa criar tabelas: a API cria tudo sozinha ao iniciar.
+
+**API e site (Render)**
 1. https://dashboard.render.com → **New → Blueprint** → conecte o GitHub e escolha `AcompNutri`.
 2. O Render pede os campos em branco. Na primeira vez você ainda não sabe os endereços; preencha assim:
    | Serviço | Campo | Valor |
    |---|---|---|
+   | acompnutri-api | `DATABASE_URL` | connection string do Neon |
    | acompnutri-api | `SUPABASE_URL` | Project URL do Supabase novo |
    | acompnutri-api | `CORS_ORIGIN` | deixe vazio por enquanto |
    | acompnutri | `VITE_SUPABASE_URL` | Project URL do Supabase novo |
@@ -115,12 +126,12 @@ O arquivo [render.yaml](render.yaml) cria o banco, a API e o site.
 
 Cada `git push` na `main` publica de novo automaticamente.
 
-**Limites do plano grátis do Render**
-- A API **dorme após 15 min** sem uso; a primeira abertura do dia leva ~1 min (o app mostra "Conectando ao servidor…").
-- O **Postgres grátis expira 30 dias** depois de criado (os dados são apagados). Para uso real:
-  troque para o plano pago do Render (Basic) **ou** use um Postgres grátis que não expira, como o
-  [Neon](https://neon.tech): crie o banco lá, e na API do Render troque `DATABASE_URL` pela connection string
-  do Neon e `DATABASE_SSL` para `true` (depois pode apagar o `acompnutri-db` do Render).
+**Limites dos planos grátis**
+- Render: a API **dorme após 15 min** sem uso; a primeira abertura do dia leva ~1 min
+  (o app mostra "Conectando ao servidor…").
+- Neon: 0,5 GB de dados (sobra para centenas de pacientes) e o banco também "dorme" sem uso,
+  acordando em poucos segundos. Os dados não expiram.
+- Backup: no Neon, **Backup & Restore** permite voltar o banco a um momento recente.
 
 ## 5. Publicar em outros lugares
 
