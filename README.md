@@ -91,7 +91,38 @@ npm run android:build
 > Ajustes desta máquina: Gradle 9.1 (JDK 25), `android.overridePathCheck=true` (pasta com acentos)
 > e `scripts/android-build.cjs` usa `C:\Users\Public\acompnutri-tmp` como pasta temporária do Java.
 
-## 4. Publicar
+## 4. Publicar no Render (tudo de uma vez)
+
+O arquivo [render.yaml](render.yaml) cria o banco, a API e o site.
+
+1. https://dashboard.render.com → **New → Blueprint** → conecte o GitHub e escolha `AcompNutri`.
+2. O Render pede os campos em branco. Na primeira vez você ainda não sabe os endereços; preencha assim:
+   | Serviço | Campo | Valor |
+   |---|---|---|
+   | acompnutri-api | `SUPABASE_URL` | Project URL do Supabase novo |
+   | acompnutri-api | `CORS_ORIGIN` | deixe vazio por enquanto |
+   | acompnutri | `VITE_SUPABASE_URL` | Project URL do Supabase novo |
+   | acompnutri | `VITE_SUPABASE_KEY` | chave publishable/anon |
+   | acompnutri | `VITE_API_URL` | `https://acompnutri-api.onrender.com` |
+3. **Apply**. Quando terminar, confira os endereços reais no painel (se o nome já existir, o Render acrescenta letras):
+   - API: abra `https://acompnutri-api.onrender.com/api/health` → deve mostrar `{"status":"ok"}`
+   - Site: `https://acompnutri.onrender.com`
+4. Se o endereço da API saiu diferente, corrija `VITE_API_URL` no site e clique **Manual Deploy**.
+5. Na API, preencha `CORS_ORIGIN` = `https://acompnutri.onrender.com,https://localhost` (o segundo é o app Android).
+6. No Supabase → **Authentication → URL Configuration**:
+   **Site URL** = `https://acompnutri.onrender.com` e adicione `https://acompnutri.onrender.com/**` nas Redirect URLs.
+7. App Android: `.env.android` com `VITE_API_URL=https://acompnutri-api.onrender.com` → `npm run android:build`.
+
+Cada `git push` na `main` publica de novo automaticamente.
+
+**Limites do plano grátis do Render**
+- A API **dorme após 15 min** sem uso; a primeira abertura do dia leva ~1 min (o app mostra "Conectando ao servidor…").
+- O **Postgres grátis expira 30 dias** depois de criado (os dados são apagados). Para uso real:
+  troque para o plano pago do Render (Basic) **ou** use um Postgres grátis que não expira, como o
+  [Neon](https://neon.tech): crie o banco lá, e na API do Render troque `DATABASE_URL` pela connection string
+  do Neon e `DATABASE_SSL` para `true` (depois pode apagar o `acompnutri-db` do Render).
+
+## 5. Publicar em outros lugares
 
 | Parte | Onde | Configuração |
 |---|---|---|
