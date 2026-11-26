@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-script: "Dancing Script", cursive;
+  --color-sage-50: #f4f7f2;
+  --color-sage-100: #e7eee4;
+  --color-sage-200: #cfdcc9;
+  --color-sage-300: #aec3a6;
+  --color-sage-400: #88a57f;
+  --color-sage-500: #6b8f71;
+  --color-sage-600: #5f7f64;
+  --color-sage-700: #4b6650;
+  --color-sage-800: #3c5141;
+  --color-sage-900: #2d3c31;
+  --color-ok: #3f8f5a;
+  --color-nao: #c0504d;
+}
+
+html, body { background: #f6f7f4; color: #26302a; }
+body { -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+
+/* áreas seguras (notch / barra de gestos) no celular e no app Android */
+@utility safe-top { padding-top: env(safe-area-inset-top); }
+@utility safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+@utility card { @apply bg-white rounded-2xl border border-stone-200/80 shadow-[0_1px_2px_rgba(0,0,0,.04)]; }
+@utility label { @apply block text-xs font-medium text-stone-600 mb-1; }
+@utility input { @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-sage-500 focus:ring-2 focus:ring-sage-200; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition disabled:opacity-50 disabled:pointer-events-none cursor-pointer; }
+@utility btn-primary { @apply btn bg-sage-600 text-white hover:bg-sage-700; }
+@utility btn-ghost { @apply btn text-stone-700 hover:bg-stone-100; }
+@utility btn-outline { @apply btn border border-stone-300 bg-white text-stone-700 hover:bg-stone-50; }
+@utility btn-danger { @apply btn text-nao hover:bg-red-50; }
+@utility chip { @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium; }
+
+@media print {
+  .no-print { display: none !important; }
+  body, html { background: white; }
+  .card { box-shadow: none; border-color: #ddd; break-inside: avoid; }
+  @page { size: A4 landscape; margin: 12mm; }
+}

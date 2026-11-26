@@ -1,0 +1,39 @@
+# Banco + API do AcompNutri.
+#   Só o banco (para desenvolver com "npm run dev" na pasta server):  docker compose up -d db
+#   Banco + API:                                                     docker compose up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: acompnutri
+      POSTGRES_USER: acompnutri
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-acompnutri-dev}
+    ports:
+      - "${DB_PORT:-5434}:5432" # 5434 para não brigar com o Postgres do Mentalist (5433)
+    volumes:
+      - acompnutri-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U acompnutri -d acompnutri"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: ./server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://acompnutri:${POSTGRES_PASSWORD:-acompnutri-dev}@db:5432/acompnutri
+      SUPABASE_URL: ${SUPABASE_URL:?defina SUPABASE_URL no .env}
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      APP_TIMEZONE: America/Sao_Paulo
+      NODE_ENV: production
+    ports:
+      - "${API_PORT:-3000}:3000"
+
+volumes:
+  acompnutri-db:
