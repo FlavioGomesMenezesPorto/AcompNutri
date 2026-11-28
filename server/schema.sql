@@ -57,6 +57,8 @@ create table if not exists habitos (
   created_at  timestamptz not null default now()
 );
 create index if not exists habitos_paciente_idx on habitos (paciente_id);
+-- hábito criado pelo próprio paciente (ele pode editar/excluir só esses)
+alter table habitos add column if not exists criado_pelo_paciente boolean not null default false;
 
 create table if not exists registros_habito (
   habito_id  uuid not null references habitos on delete cascade,

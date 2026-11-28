@@ -24,6 +24,23 @@ allprojects {
     }
 }
 
+// Alguns plugins (ex.: @capacitor/filesystem) pedem um JDK 21 instalado (kotlin jvmToolchain(21)).
+// Esta máquina só tem o JDK 25: usa o JDK que roda o Gradle e continua gerando bytecode Java 21.
+subprojects {
+    afterEvaluate { p ->
+        def kotlinExt = p.extensions.findByName('kotlin')
+        if (kotlinExt == null) return
+        def jdkAtual = JavaVersion.current().majorVersion.toInteger()
+        kotlinExt.jvmToolchain(jdkAtual)
+        p.extensions.findByName('java')?.toolchain?.languageVersion?.set(JavaLanguageVersion.of(jdkAtual))
+        p.tasks.matching { it.class.name.contains('KotlinCompile') }.configureEach {
+            // JvmTarget.JVM_21 (a classe do Kotlin não está no classpath deste arquivo)
+            def tipo = it.class.classLoader.loadClass('org.jetbrains.kotlin.gradle.dsl.JvmTarget')
+            compilerOptions.jvmTarget.set(Enum.valueOf(tipo, 'JVM_21'))
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

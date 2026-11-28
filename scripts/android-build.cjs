@@ -12,5 +12,7 @@ const env = {
   JAVA_TOOL_OPTIONS: `-Djdk.net.unixdomain.tmpdir=${tmp} -Djava.io.tmpdir=${tmp}`,
 }
 
-execSync('gradlew.bat assembleDebug', { cwd: path.join(__dirname, '..', 'android'), env, stdio: 'inherit' })
+// caminho completo: alguns terminais não procuram programas na pasta atual
+const android = path.join(__dirname, '..', 'android')
+execSync(`"${path.join(android, 'gradlew.bat')}" assembleDebug`, { cwd: android, env, stdio: 'inherit' })
 console.log('\nAPK: android/app/build/outputs/apk/debug/app-debug.apk')

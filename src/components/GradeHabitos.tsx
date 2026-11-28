@@ -70,7 +70,9 @@ export function GradeHabitos({ mes, habitos, registros, onAlternar, onEditarHabi
                     <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: h.cor }} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium leading-tight">{h.nome}</div>
-                      {h.meta && <div className="truncate text-[11px] text-stone-500">{h.meta}</div>}
+                      {(h.meta || h.criado_pelo_paciente) && (
+                        <div className="truncate text-[11px] text-stone-500">{[h.meta, h.criado_pelo_paciente && 'criado pelo paciente'].filter(Boolean).join(' · ')}</div>
+                      )}
                     </div>
                     {onEditarHabito && (
                       <button className="no-print rounded p-1 text-stone-400 transition hover:bg-stone-100 hover:text-stone-700 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100" onClick={() => onEditarHabito(h)} aria-label={`Editar ${h.nome}`}>

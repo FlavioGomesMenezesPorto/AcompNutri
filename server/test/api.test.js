@@ -112,14 +112,24 @@ test('fluxo completo: nutricionista, paciente, hábitos, resumo, agenda e permis
   assert.equal((await bruno('GET', `/api/pacientes/${pid}/habitos?mes=${mes}`)).status, 404)
   assert.equal((await bruno('GET', '/api/pacientes')).body.length, 0)
 
-  // hábitos: só a nutricionista cria
+  // hábitos: a nutricionista cria; a paciente não altera os dela
   const inicio = hojeSP().slice(0, 8) + '01'
   r = await ana('POST', `/api/pacientes/${pid}/habitos`, { nome: 'Água', meta: '+3 litros', inicio })
   assert.equal(r.status, 201)
+  assert.equal(r.body.criado_pelo_paciente, false)
   const hid = r.body.id
-  assert.equal((await pac('POST', `/api/pacientes/${pid}/habitos`, { nome: 'Hack' })).status, 403)
   assert.equal((await pac('PUT', `/api/habitos/${hid}`, { nome: 'Hack' })).status, 403)
   assert.equal((await pac('DELETE', `/api/habitos/${hid}`)).status, 403)
+
+  // a paciente cria, edita e exclui os próprios hábitos; outro nutricionista não
+  r = await pac('POST', `/api/pacientes/${pid}/habitos`, { nome: 'Treino', inicio })
+  assert.equal(r.status, 201)
+  assert.equal(r.body.criado_pelo_paciente, true)
+  const proprio = r.body.id
+  assert.equal((await bruno('POST', `/api/pacientes/${pid}/habitos`, { nome: 'Intruso' })).status, 404)
+  r = await pac('PUT', `/api/habitos/${proprio}`, { nome: 'Treino', meta: '45 min', inicio })
+  assert.equal(r.status, 200); assert.equal(r.body.meta, '45 min')
+  assert.equal((await pac('DELETE', `/api/habitos/${proprio}`)).status, 204)
 
   // a paciente marca hoje; não marca dia futuro
   r = await pac('PUT', `/api/habitos/${hid}/registros/${hojeSP()}`, { status: 'ok' })

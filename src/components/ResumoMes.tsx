@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { getISOWeek } from 'date-fns'
-import { Printer, Save, Share2, Lock, Trophy, Flame, TrendingDown, TrendingUp, CalendarCheck } from 'lucide-react'
+import { Printer, Save, Share2, Lock, Trophy, Flame, TrendingDown, TrendingUp, CalendarCheck, FileDown, Loader2 } from 'lucide-react'
 import { api, tentar } from '../lib/api'
+import { gerarRelatorioPdf } from '../lib/relatorio'
+import { ehApp } from '../lib/nativo'
 import { diasDoMes, fmt, habitoAtivoEm, hoje, mesKey, nomeMes, ymd } from '../lib/datas'
 import { adesaoGeral, corPct, estatisticas } from '../lib/habitos'
 import type { Compromisso, Habito, Paciente, ResumoMensal, StatusRegistro } from '../lib/types'
@@ -101,6 +103,22 @@ export function ResumoMes({ paciente, mes, habitos, registros, editavel, nomePro
     toast(novoCompartilhado && !compartilhado ? 'Resumo salvo e compartilhado com o paciente' : 'Resumo salvo')
   }
 
+  const [gerando, setGerando] = useState(false)
+  async function baixarPdf() {
+    setGerando(true)
+    try {
+      await gerarRelatorioPdf({
+        paciente: paciente.nome, profissional: nomeProfissional, mes, habitos, registros, est, geral,
+        maiorSequencia: maiorSeq, semanas, observacoes: obs, resumo, consultas,
+      })
+    } catch (e) {
+      // fechar o "Compartilhar" sem escolher nada não é erro
+      if (!/cancel/i.test(String((e as Error)?.message ?? e))) toastErro(e)
+    } finally {
+      setGerando(false)
+    }
+  }
+
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setForm((f) => ({ ...f, [k]: e.target.value }))
   const realizadas = consultas.filter((c) => c.status === 'realizado').length
 
@@ -111,6 +129,18 @@ export function ResumoMes({ paciente, mes, habitos, registros, editavel, nomePro
 
   return (
     <div className="space-y-5">
+      {/* relatório em PDF (site: baixa o arquivo; app: abre o Compartilhar) */}
+      <div className="no-print flex flex-wrap items-center justify-between gap-2 rounded-xl border border-sage-200 bg-sage-50 p-3">
+        <p className="text-sm text-sage-800">
+          <b>Relatório de {nomeMes(mes)}</b>
+          <span className="block text-xs text-sage-700">Adesão, folha do mês, observações{editavel ? ' e a avaliação (quando compartilhada)' : ''}.</span>
+        </p>
+        <button className="btn-primary" disabled={gerando} onClick={baixarPdf}>
+          {gerando ? <Loader2 size={15} className="animate-spin" /> : <FileDown size={15} />}
+          {ehApp ? 'Gerar PDF' : 'Baixar PDF'}
+        </button>
+      </div>
+
       {/* cabeçalho só na impressão */}
       <div className="hidden print:block">
         <div className="flex items-end justify-between border-b-2 border-sage-600 pb-2">
@@ -131,7 +161,7 @@ export function ResumoMes({ paciente, mes, habitos, registros, editavel, nomePro
         <Kpi icone={<Flame size={16} />} titulo="Maior sequência" valor={`${maiorSeq} ${maiorSeq === 1 ? 'dia' : 'dias'}`} sub={est.find((e) => e.melhorSequencia === maiorSeq && maiorSeq > 0)?.habito.nome ?? '—'} />
         <Kpi icone={delta != null && delta > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />} titulo="Peso"
           valor={peso != null ? `${peso.toLocaleString('pt-BR')} kg` : '—'}
-          sub={[delta != null && `${delta > 0 ? '+' : ''}${delta.toLocaleString('pt-BR')} kg vs mês anterior`, imc && `IMC ${imc.toLocaleString('pt-BR')}`].filter(Boolean).join(' · ') || 'registre abaixo'} />
+          sub={[delta != null && `${delta > 0 ? '+' : ''}${delta.toLocaleString('pt-BR')} kg vs mês anterior`, imc && `IMC ${imc.toLocaleString('pt-BR')}`].filter(Boolean).join(' · ') || (editavel ? 'registre abaixo' : 'registrado na consulta')} />
         <Kpi icone={<CalendarCheck size={16} />} titulo="Consultas no mês" valor={`${consultas.length}`} sub={`${realizadas} realizada${realizadas === 1 ? '' : 's'}`} />
       </div>
 
@@ -233,10 +263,9 @@ export function ResumoMes({ paciente, mes, habitos, registros, editavel, nomePro
           {CAMPOS_TEXTO.map(([k, label]) => resumo[k] && (
             <div key={k}><div className="label">{label}</div><p className="whitespace-pre-wrap text-sm">{resumo[k]}</p></div>
           ))}
-          <button className="btn-outline no-print" onClick={() => window.print()}><Printer size={15} />Imprimir / PDF</button>
         </div>
       ) : (
-        <p className="text-center text-sm text-stone-500">A avaliação do seu nutricionista aparecerá aqui quando for compartilhada.</p>
+        <p className="no-print text-center text-sm text-stone-500">A avaliação do seu nutricionista aparecerá aqui quando for compartilhada.</p>
       )}
 
       {/* consultas do mês */}

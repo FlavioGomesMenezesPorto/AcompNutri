@@ -33,6 +33,7 @@ export type Habito = {
   ordem: number
   inicio: string
   fim: string | null
+  criado_pelo_paciente?: boolean
 }
 
 export type StatusRegistro = 'ok' | 'nao'

@@ -116,13 +116,17 @@ r.get('/:id/habitos', async (req, res) => {
 })
 
 r.post('/:id/habitos', async (req, res) => {
-  const paciente = await exigirProfDoPaciente(req, req.params.id)
+  // o nutricionista e o próprio paciente podem criar hábitos
+  const { paciente, papel } = await acessoPaciente(req, req.params.id)
   const b = req.body
-  const ordem = (await one('select coalesce(max(ordem) + 1, 0)::int as n from habitos where paciente_id = $1', [paciente.id])).n
+  const { ordem, total } = await one(
+    'select coalesce(max(ordem) + 1, 0)::int as ordem, count(*)::int as total from habitos where paciente_id = $1', [paciente.id])
+  if (total >= 50) throw erro(400, 'Limite de 50 hábitos atingido. Encerre ou exclua algum antes.')
   const h = await one(
-    `insert into habitos (paciente_id, nome, meta, cor, inicio, ordem) values ($1, $2, $3, $4, $5, $6) returning *`,
+    `insert into habitos (paciente_id, nome, meta, cor, inicio, ordem, criado_pelo_paciente)
+     values ($1, $2, $3, $4, $5, $6, $7) returning *`,
     [paciente.id, v.texto(b.nome, 'hábito', { obrigatorio: true, max: 80 }), v.texto(b.meta, 'meta', { max: 80 }),
-      v.cor(b.cor), v.data(b.inicio, 'início') || hoje(), ordem],
+      v.cor(b.cor), v.data(b.inicio, 'início') || hoje(), ordem, papel === 'paciente'],
   )
   res.status(201).json(h)
 })

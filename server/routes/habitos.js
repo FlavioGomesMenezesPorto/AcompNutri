@@ -1,4 +1,4 @@
-// /api/habitos/:id — editar/excluir (nutricionista) e marcar dias (nutricionista ou paciente)
+// /api/habitos/:id — editar/excluir (nutricionista; paciente só os próprios) e marcar dias (ambos)
 const { Router } = require('express')
 const { one, query } = require('../db')
 const { v, erro, hoje, somarDias, acessoPaciente } = require('../util')
@@ -12,9 +12,15 @@ async function carregar(req) {
   return { h, papel }
 }
 
+/** O nutricionista altera qualquer hábito; o paciente, só os que ele mesmo criou. */
+function exigirPodeAlterar(h, papel) {
+  if (papel === 'prof' || h.criado_pelo_paciente) return
+  throw erro(403, 'Este hábito foi definido pelo seu nutricionista; só ele pode alterar.')
+}
+
 r.put('/:id', async (req, res) => {
   const { h, papel } = await carregar(req)
-  if (papel !== 'prof') throw erro(403, 'Apenas o nutricionista pode editar hábitos.')
+  exigirPodeAlterar(h, papel)
   const b = req.body
   const inicio = v.data(b.inicio, 'início') || h.inicio
   const fim = b.fim === undefined ? h.fim : v.data(b.fim, 'fim')
@@ -27,7 +33,7 @@ r.put('/:id', async (req, res) => {
 
 r.delete('/:id', async (req, res) => {
   const { h, papel } = await carregar(req)
-  if (papel !== 'prof') throw erro(403, 'Apenas o nutricionista pode excluir hábitos.')
+  exigirPodeAlterar(h, papel)
   await query('delete from habitos where id = $1', [h.id])
   res.status(204).end()
 })
